@@ -1,4 +1,3 @@
-import java.util.LinkedList;
 import java.util.NoSuchElementException;
 
 public class FactoryImpl implements Factory {
@@ -13,10 +12,10 @@ public class FactoryImpl implements Factory {
         final Holder newHolder = new Holder(null, product, firstHolder);
         first = newHolder;
         if(firstHolder == null){
-            first = newHolder;
+            last = newHolder;
         }
         else{
-            first.setPreviousHolder(newHolder);
+            firstHolder.setPreviousHolder(newHolder);
         }
         size++;
     }
@@ -29,7 +28,7 @@ public class FactoryImpl implements Factory {
             last = newHolder;
         }
         else{
-            last.setNextHolder(newHolder);
+            lastHolder.setNextHolder(newHolder);
         }
         size++;
     }
@@ -140,10 +139,9 @@ public class FactoryImpl implements Factory {
         if (previousHolder == null)
             first = newHolder;
         else
-            newHolder.setNextHolder(newHolder);
+            previousHolder.setNextHolder(newHolder);
         size++;
     }
-
     private Holder getHolderAtIndex(int index){
         if (index <= size) {
             Holder tempHolder = first;
@@ -165,6 +163,7 @@ public class FactoryImpl implements Factory {
         throw new NoSuchElementException("There is no product with the given id " + id);
     }
     private boolean isHolderExists(Holder holder){
+
         return holder != null;
     }
     private void checkHolderExists(Holder holder){
