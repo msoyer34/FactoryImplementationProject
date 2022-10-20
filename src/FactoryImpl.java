@@ -1,4 +1,9 @@
-import java.util.NoSuchElementException;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.function.Consumer;
 
 public class FactoryImpl implements Factory {
 
@@ -6,10 +11,12 @@ public class FactoryImpl implements Factory {
     private Holder last;
     private int size = 0;
 
+    Map<String, Consumer<Vector<Integer>>> methods = new HashMap<>();
+
     @Override
     public void addFirst(Product product) {
-        final Holder firstHolder = first;
-        final Holder newHolder = new Holder(null, product, firstHolder);
+        Holder firstHolder = first;
+        Holder newHolder = new Holder(null, product, firstHolder);
         first = newHolder;
         if(firstHolder == null){
             last = newHolder;
@@ -21,11 +28,11 @@ public class FactoryImpl implements Factory {
     }
     @Override
     public void addLast(Product product) {
-        final Holder lastHolder = last;
-        final Holder newHolder = new Holder(lastHolder, product, null);
+        Holder lastHolder = last;
+        Holder newHolder = new Holder(lastHolder, product, null);
         last = newHolder;
         if(lastHolder == null){
-            last = newHolder;
+            first = newHolder;
         }
         else{
             lastHolder.setNextHolder(newHolder);
@@ -34,10 +41,10 @@ public class FactoryImpl implements Factory {
     }
     @Override
     public Product removeFirst() throws NoSuchElementException {
-        final Holder firstHolder = first;
+        Holder firstHolder = first;
         checkHolderExists(firstHolder);
-        final Product removedProduct = firstHolder.getProduct();
-        final Holder nextHolder = firstHolder.getNextHolder();
+        Product removedProduct = firstHolder.getProduct();
+        Holder nextHolder = firstHolder.getNextHolder();
         firstHolder.setProduct(null);
         firstHolder.setNextHolder(null);
         first = nextHolder;
@@ -51,10 +58,10 @@ public class FactoryImpl implements Factory {
 
     @Override
     public Product removeLast() throws NoSuchElementException {
-        final Holder lastHolder = last;
+        Holder lastHolder = last;
         checkHolderExists(lastHolder);
-        final Product removedProduct = last.getProduct();
-        final Holder previousHolder = last.getPreviousHolder();
+        Product removedProduct = last.getProduct();
+        Holder previousHolder = last.getPreviousHolder();
         lastHolder.setProduct(null);
         lastHolder.setPreviousHolder(null);
         if(previousHolder == null)
@@ -74,7 +81,7 @@ public class FactoryImpl implements Factory {
 
     @Override
     public Product update(int id, Integer value) throws NoSuchElementException {
-        final Product toBeUpdatedProduct = getProductWithId(id);
+        Product toBeUpdatedProduct = getProductWithId(id);
         toBeUpdatedProduct.setValue(value);
         return toBeUpdatedProduct;
     }
@@ -82,7 +89,7 @@ public class FactoryImpl implements Factory {
     @Override
     public Product get(int index) throws IndexOutOfBoundsException {
         checkPositionIndex(index);
-        final Holder holderOfProductInGivenIndex = getHolderAtIndex(index);
+        Holder holderOfProductInGivenIndex = getHolderAtIndex(index);
         return holderOfProductInGivenIndex.getProduct();
     }
 
@@ -110,6 +117,7 @@ public class FactoryImpl implements Factory {
 
     @Override
     public Product removeProduct(int value) throws NoSuchElementException {
+        //removeHolder(getHolderWithValue());
         return null;
     }
 
@@ -129,12 +137,12 @@ public class FactoryImpl implements Factory {
     }
     private void checkPositionIndex(int index) {
         if (!isIndexInPosition(index))
-            throw new IndexOutOfBoundsException("Index " + index + "is out of bounds");
+            throw new IndexOutOfBoundsException("Index out of bounds");
     }
 
     private void addBefore(Product product, Holder holder) {
-        final Holder previousHolder = holder.getPreviousHolder();
-        final Holder newHolder = new Holder(previousHolder, product, holder);
+        Holder previousHolder = holder.getPreviousHolder();
+        Holder newHolder = new Holder(previousHolder, product, holder);
         holder.setPreviousHolder(newHolder);
         if (previousHolder == null)
             first = newHolder;
@@ -150,7 +158,7 @@ public class FactoryImpl implements Factory {
             return tempHolder;
         }
         else
-            throw new IndexOutOfBoundsException("Index " + index + "is out of bounds");
+            throw new IndexOutOfBoundsException("Index out of bounds");
     }
     private Product getProductWithId(int id){
         Holder tempHolder = first;
@@ -160,7 +168,7 @@ public class FactoryImpl implements Factory {
             }
             tempHolder = tempHolder.getNextHolder();
         }
-        throw new NoSuchElementException("There is no product with the given id " + id);
+        throw new NoSuchElementException("Factory is empty.");
     }
     private boolean isHolderExists(Holder holder){
 
@@ -168,14 +176,14 @@ public class FactoryImpl implements Factory {
     }
     private void checkHolderExists(Holder holder){
          if(!isHolderExists(holder)){
-             throw new NoSuchElementException("There is no product.");
+             throw new NoSuchElementException("Factory is empty.");
          }
     }
     private Product removeHolder(int index){
-        final Holder holderOfProductInGivenIndex = getHolderAtIndex(index);
-        final Product toBeRemovedProduct = holderOfProductInGivenIndex.getProduct();
-        final Holder previousHolder = holderOfProductInGivenIndex.getPreviousHolder();
-        final Holder nextHolder = holderOfProductInGivenIndex.getNextHolder();
+        Holder holderOfProductInGivenIndex = getHolderAtIndex(index);
+        Product toBeRemovedProduct = holderOfProductInGivenIndex.getProduct();
+        Holder previousHolder = holderOfProductInGivenIndex.getPreviousHolder();
+        Holder nextHolder = holderOfProductInGivenIndex.getNextHolder();
         holderOfProductInGivenIndex.setProduct(null);
         holderOfProductInGivenIndex.setPreviousHolder(null);
         previousHolder.setNextHolder(nextHolder);
@@ -183,4 +191,61 @@ public class FactoryImpl implements Factory {
         size--;
         return toBeRemovedProduct;
     }
+
+    public List<String> readOperationsFromFile(String filePath){
+        List<String> listOfOperations = Collections.emptyList();
+        try{
+            listOfOperations = Files.readAllLines(Paths.get(filePath), StandardCharsets.UTF_8);
+        }
+        catch (IOException ex){
+            System.out.println("Something went wrong while reading the file.");
+        }
+        return listOfOperations;
+    }
+    public String print(){
+        StringBuilder toBePrintedString = new StringBuilder("{");
+        for(int i = 0; i < size; i++){
+            Holder holderAtIndex = getHolderAtIndex(i);
+            toBePrintedString.append(holderAtIndex.getProduct().toString());
+        }
+        toBePrintedString.append("}");
+        System.out.println(toBePrintedString);
+        return toBePrintedString.toString();
+    }
+    public void initializeFactory(){
+        methods.put("AF", (k) -> this.addFirst(new Product(k.get(0), k.get(1))));
+        methods.put("AL", (k) -> this.addLast(new Product( k.get(0),k.get(1))));
+        methods.put("A", (k) -> this.add((Integer) k.get(0), new Product(k.get(1), k.get(2))));
+        methods.put("RF", (k) -> this.removeFirst());
+        methods.put("RL", (k) -> this.removeLast());
+        methods.put("RI", (k) -> this.removeIndex(k.get(0)));
+        methods.put("RP", (k) -> this.removeProduct(k.get(0)));
+        methods.put("F", (k) -> this.find(k.get(0)));
+        methods.put("G", (k) -> this.get(k.get(0)));
+        methods.put("U", (k) -> this.update(k.get(0), k.get(1)));
+        methods.put("FD", (k) -> this.filterDuplicates());
+        methods.put("P", (k) -> this.print());
+        methods.put("R", (k) -> this.reverse());
+
+    }
+    public void makeOperation(String[] operationAndParameters)
+    {
+        var MethodName = operationAndParameters[0];
+        Vector<Integer> listOfParameters = new Vector<Integer>();
+        for(int i = 1; i < operationAndParameters.length; i++){
+            listOfParameters.add(Integer.parseInt(operationAndParameters[i]));
+        }
+        try{
+            if(methods.containsKey(MethodName)){
+                methods.get(MethodName).accept(listOfParameters);
+            }
+        }
+        catch (NoSuchElementException ex){
+            System.out.println(ex.getMessage());
+        }
+        catch (IndexOutOfBoundsException ex){
+            System.out.println(ex.getMessage());
+        }
+    }
+
 }
